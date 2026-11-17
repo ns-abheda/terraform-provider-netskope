@@ -1,0 +1,30 @@
+---
+page_title: "{{.ProviderShortName}} Provider"
+description: |-
+  Netskope Terraform Provider: Combined specification to produce netskope terraform provider via speakeasy
+---
+
+# {{.ProviderShortName}} Provider
+
+Netskope Terraform Provider: Combined specification to produce netskope terraform provider via speakeasy
+
+## Example Usage
+
+{{tffile .ExampleFile}}
+
+## Rate Limits and Retries
+
+The Netskope APIs return `429` when a rate limit is exceeded. The provider does not throttle requests on the client side; it retries `429` and transient `5xx` responses with exponential backoff and jitter, honouring `Retry-After` (capped at 60 s per wait). Retries stop after `retry_max_elapsed_time` (300 s by default). Use `retry_max_elapsed_time` and `retry_disabled` (see the schema below) to tune this, for example `retry_max_elapsed_time = 30` to fail fast in CI.
+
+### NPA private apps
+
+Reads of NPA private apps are limited per tenant as follows. Writes and all other routes are unchanged.
+
+| Endpoint | Per-second | Per-hour |
+|---|---|---|
+| `GET /apps/private` | 10 | 5,000 |
+| `GET /apps/private/{id}` | 10 | 5,000 |
+
+Every plan or refresh reads each managed `netskope_npa_private_app` and each `netskope_npa_private_app` data source with one `GET /apps/private/{id}`, and each `netskope_npa_private_apps_list` data source with one `GET /apps/private`. For large configurations the hourly limit is the relevant constraint. Backoff handles the per-second limit; if the hourly limit is exhausted the run fails with a `429` error once `retry_max_elapsed_time` is reached, and increasing it does not help. Wait for the limit to reset or reduce the number of reads (for example with `-refresh=false` or `-target`). The limits apply per tenant, so workspaces and CI jobs sharing a tenant share the budget.
+
+{{ .SchemaMarkdown | trimspace }}

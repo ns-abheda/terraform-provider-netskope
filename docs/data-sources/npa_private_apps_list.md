@@ -10,6 +10,8 @@ description: |-
 
 NPAPrivateAppsList DataSource
 
+> **Rate limit:** `GET /apps/private` is limited to **10 requests per second** and **5,000 requests per hour** per tenant. This data source makes a single list call regardless of how many apps are returned. See [Retry Configuration](https://registry.terraform.io/providers/netskopeoss/netskope/latest/docs#rate-limits-and-retries) for details and tuning options.
+
 ## Example Usage
 
 ```terraform

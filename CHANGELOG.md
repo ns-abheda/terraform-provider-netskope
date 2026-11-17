@@ -4,6 +4,11 @@ All notable changes to the Netskope Terraform Provider will be documented in thi
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+- **Documented the NPA private app API rate limits** — The two private app read endpoints, `GET /apps/private` and `GET /apps/private/{id}`, are now limited to 10 requests per second and 5,000 requests per hour per tenant (previously 30 per second and 1,000 per hour). Writes and all other routes are unchanged. Added to a new "Rate Limits and Retries" section on the provider index page (rendered on the Terraform Registry), [Retry Configuration](docs/RETRY_CONFIGURATION.md), the `netskope_npa_private_app` resource page and the `netskope_npa_private_app` / `netskope_npa_private_apps_list` data source pages. The docs explain that the provider's 429 retry covers the per-second limit, but an exhausted hourly limit fails the run once `retry_max_elapsed_time` is reached.
+
 ## [0.4.13] - 2026-10-26
 
 ### Fixed

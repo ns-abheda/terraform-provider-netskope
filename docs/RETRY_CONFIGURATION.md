@@ -51,6 +51,27 @@ Provider attributes take precedence over environment variables when both are set
 | Parallel acceptance tests | default | Tests run with `-parallel 8`; rate limits are normal and expected |
 | Disabled (debugging) | `retry_disabled = true` | Returns raw API responses immediately for diagnosis |
 
+## NPA private app API rate limits
+
+The NPA private app read endpoints (`GET /api/v2/steering/apps/private` and `GET /api/v2/steering/apps/private/{id}`) have the following limits:
+
+| Endpoint | Per-second | Per-hour |
+|---|---|---|
+| `GET /apps/private` | 10 | 5,000 |
+| `GET /apps/private/{id}` | 10 | 5,000 |
+
+Writes (`POST`, `PUT`, `DELETE`) and all other routes are unchanged.
+
+> **Previous limits were 30 req/s and 1,000 req/hr.** The hourly cap was the primary blocker for Terraform users because a `terraform plan` or `terraform refresh` reads every private app it manages. The new 5,000/hr limit allows roughly 80 reads per minute sustained; the lower per-second rate (10) is still above the natural read rate of a single Terraform run.
+
+The provider does not throttle requests on the client side. It only reacts to `429` responses using the retry behaviour described above.
+
+Things to keep in mind:
+
+- **Limits apply per tenant.** Several workspaces or CI jobs that manage private apps in the same tenant share the same budget.
+- **Every managed app costs one read per plan or refresh.** Each `netskope_npa_private_app` resource and `netskope_npa_private_app` data source issues one `GET /apps/private/{id}`; each `netskope_npa_private_apps_list` data source issues one `GET /apps/private`. For large estates, `terraform plan -refresh=false` or `-target` reduces reads where that is appropriate.
+- **Backoff handles the per-second limit, not the hourly one.** If the hourly limit is exhausted, the wait for the window to reset can be far longer than the 60 s `Retry-After` cap, and the provider gives up after `retry_max_elapsed_time` (300 s by default). The run then fails with a `429` error. Increasing `retry_max_elapsed_time` does not help here; wait for the limit to reset, or reduce the number of reads, then run again.
+
 ## How the budget is enforced
 
 Before sleeping, the provider checks whether the proposed wait would exceed the remaining budget. If it would, the request fails immediately rather than sleeping and then failing — this prevents a large `Retry-After` value from blocking a pipeline for its full duration when time has already run out.

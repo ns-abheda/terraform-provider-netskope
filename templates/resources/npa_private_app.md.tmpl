@@ -48,6 +48,17 @@ resource "netskope_npa_private_app" "example" {
 }
 ```
 
+## API Rate Limits
+
+The NPA API limits reads of private apps to the following per tenant. Writes and all other routes are unchanged.
+
+| Endpoint | Per-second | Per-hour |
+|---|---|---|
+| `GET /apps/private` | 10 | 5,000 |
+| `GET /apps/private/{id}` | 10 | 5,000 |
+
+Each plan or refresh reads every managed app with `GET /apps/private/{id}`, so for large configurations the hourly limit is the relevant constraint. The provider retries `429` responses with backoff, which handles the per-second limit; if the hourly limit is exhausted the run fails with a `429` error. See [Retry Configuration](https://registry.terraform.io/providers/netskopeoss/netskope/latest/docs#rate-limits-and-retries) for details and tuning.
+
 ## Example Usage
 
 {{tffile .ExampleFile}}
